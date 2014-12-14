@@ -10,9 +10,8 @@
  *
  */
 
-void vStartClockTask();
-long getMissionTime();
-void zeroRTC();
+void startClock();
+long getFlightTime();
 
 
 #endif

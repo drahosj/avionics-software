@@ -1,17 +1,12 @@
 #include "clock.h"
 
-#include "FreeRTOS.h"
-#include "task.h"
-#include "queue.h"
-
 #include "system.h"
-#include "uart.h"
 #include <stdint.h>
 #include <time.h>
 #include <stm32f4xx.h>
 
 
-time_t getMissionTime() {
+time_t getFlightTime() {
     struct tm currentTime;
     
     currentTime.tm_sec = 0;
@@ -43,7 +38,7 @@ time_t getMissionTime() {
     return mktime(&currentTime);
 }
 
-void startRTC() {
+void startClock() {
     uint32_t tmp = 0;
     RCC_TypeDef * rcc = RCC;
     RTC_TypeDef * rtc = RTC;
