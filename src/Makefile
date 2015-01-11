@@ -1,5 +1,5 @@
 # Add filename.o to include in compilation
-OBJECTS=main.o system_stm32f4xx.o startup_stm32f411xe.o clock.o usart.o
+OBJECTS=main.o system_stm32f4xx.o startup_stm32f411xe.o clock.o usart.o i2c.o spi.o
 
 all: image.elf
 
