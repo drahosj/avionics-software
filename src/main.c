@@ -11,11 +11,15 @@
 #include <stm32f4xx_rcc.h>
 
 /* Application includes */
+#include <tasks.h>
 
 /*Address Defines*/
 
 /*Init system config*/
 
+volatile uint64_t FlightTime = 0;
+
+static volatile uint8_t task_100_flag = 0;
 
 static void lowLevelHardwareInit()
 {
@@ -30,41 +34,44 @@ int main( void )
 {
     lowLevelHardwareInit();
 
-    /* Test Heartbeat Initialization */
     GPIO_InitTypeDef GPIO_InitStructure;
     
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3;
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_6 | GPIO_Pin_7 | GPIO_Pin_8 | GPIO_Pin_9;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
     GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
     GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
     
     GPIO_Init(GPIOC, &GPIO_InitStructure);
+	GPIOC->ODR = 0x0000; /* SUPER EXTREME DANGER DEATH AND STUFF THIS WILL MAKE EXPLOSIONS */
 
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_12 | GPIO_Pin_13 | GPIO_Pin_14 | GPIO_Pin_15;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN;
     GPIO_Init(GPIOB, &GPIO_InitStructure);
-    /* End test heartbeat initialization */
+	
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
+	GPIO_Init(GPIOC, &GPIO_InitStructure);
 
-//    startClock();
-
-    SysTick_Config(SystemCoreClock/2);
-    
+    SysTick_Config(SystemCoreClock/1000);
+    initializeTasks();
     for(;;)
     {
+		if (task_100_flag)
+		{
+			Task_100ms();
+			task_100_flag = 0;
+		}
     }
 }
 
-static uint8_t value = 0;
 void SysTick_Handler()
 {
-    uint8_t tmp = 0;
-    tmp = GPIOC->ODR;
-    value++;
-    if (value > 0x03)
-	value = 0;
+	FlightTime++;
+	if (FlightTime % 100 == 0)
+		task_100_flag = 1;
+}
 
-    tmp &= 0xFFF0;
-    tmp |= ~((GPIOB->IDR & 0xF000) >> 12);
-    GPIOC->ODR = tmp;
+void WWDG_IRQHandler()
+{
+	NVIC_SystemReset();
 }
