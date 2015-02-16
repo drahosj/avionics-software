@@ -20,8 +20,8 @@ static void prepareStateChange();
 
 void initializeTasks()
 {
-	led_position = 0;
-	led_time = 0;
+	LEDS_Reset();
+	arming_time = 0;
 }
 
 void Task_100ms()
@@ -41,12 +41,12 @@ void Task_100ms()
 		doTestFireTick();
 		break;
 	}
+	LEDS_Update(state);
 }
 
 void prepareStateChange()
 {
-	led_position = 0;
-	led_time = 0;
+	LEDS_Reset();
 	arming_time = 0;
 }
 
@@ -54,7 +54,6 @@ static void doUnarmedTick()
 {
 	uint16_t tmp;
 	
-	/* State transition stuff */
 	tmp = GPIOC->IDR & 0x0010;
 	if (tmp == 0)
 	{
@@ -65,21 +64,8 @@ static void doUnarmedTick()
 
 static void doArmingTick()
 {
-	/* LEDs stuff */
-	led_time++;
-	if (led_time >= led_pattern_arming_period[led_position])
-	{
-		led_position++;
-		if (led_position >= led_pattern_arming_length)
-			led_position = 0;
-		led_time = 0;
-	}
+	uint16_t tmp;
 	
-	uint16_t tmp = GPIOC->ODR;
-	tmp = (tmp & 0xfff0) | (led_pattern_arming[led_position] & 0x000f);
-	GPIOC->ODR = tmp;
-	
-	/* State transition stuff */
 	arming_time++;
 	tmp = GPIOC->IDR & 0x0010;
 	if (tmp)
@@ -96,30 +82,8 @@ static void doArmingTick()
 
 static void doArmedTick()
 {
-	/* LEDs stuff */
-	led_time++;
-	if (led_time >= led_pattern_armed_period[led_position])
-	{
-		led_position++;
-		if (led_position >= led_pattern_armed_length)
-			led_position = 0;
-		led_time = 0;
-	}
+	uint16_t tmp;
 	
-	uint16_t tmp = GPIOC->ODR;
-	uint16_t tmp2 = GPIOB->IDR;
-	tmp2 = (tmp2 & 0xf000) >> 12;
-	
-	tmp = (tmp & 0xfff0) | (led_pattern_armed[led_position] & 0x000f);
-	
-	if (led_position == 3)
-	{
-		tmp = (tmp & 0xfff0) | ((~tmp2) & 0x000f);
-	}
-	
-	GPIOC->ODR = tmp;
-	
-	/* State transition stuff */
 	tmp = GPIOC->IDR & 0x0010;
 	if (tmp == 0)
 	{
