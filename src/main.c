@@ -28,6 +28,7 @@ static void lowLevelHardwareInit()
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOB, ENABLE);
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);
+    RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
 }
 
 int main( void )
@@ -51,6 +52,19 @@ int main( void )
 	
 	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
 	GPIO_Init(GPIOC, &GPIO_InitStructure);
+  
+    /* Configure GPIOs for UART */
+    GPIOA->AFR[0] |= (7 << 8);
+    GPIOA->AFR[0] |= (7 << 12);
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2 | GPIO_Pin_3;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+  
+    initialize_usart(USART2);
+    NVIC_EnableIRQ(USART2_IRQn);
+    
+    usart_print(USART2, "Hello, world\n", 13);
+    
 
     SysTick_Config(SystemCoreClock/1000);
     initializeTasks();

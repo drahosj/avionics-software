@@ -1,9 +1,6 @@
-
-#include "system.h"
-#include "common.h"
+#include "usart.h"
 #include "stdio.h"
 #include "stdlib.h"
-#include "stm32f4xx.h"
 
 #define RINGBUFFER_SIZE 1024
 

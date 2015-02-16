@@ -38,7 +38,7 @@ void LEDS_Update (State_t state)
 		led_length = led_pattern_unarmed_length;
 		led_period = led_pattern_unarmed_period;
 		break;
-	case STATE_ARMING:	
+	case STATE_ARMING:
 		led_pattern = led_pattern_arming;
 		led_length = led_pattern_arming_length;
 		led_period = led_pattern_arming_period;
@@ -66,6 +66,10 @@ void LEDS_Update (State_t state)
 	
 	tmp = GPIOC->ODR;
 	tmp = (tmp & ~LED_MASK) | (led_pattern[led_position] & LED_MASK);
+  if ((state == STATE_ARMED) && (led_position == 3))
+  {
+    tmp |= ((~GPIOB->IDR) >> 12) & 0x000f;
+  }
 	GPIOC->ODR = tmp;
 }
 void LEDS_Reset()
