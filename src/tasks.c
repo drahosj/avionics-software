@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stm32f4xx.h>
 #include <tasks.h>
+#include <flash.h>
 
 #define ARM_DELAY 25
 
@@ -76,6 +77,7 @@ static void doArmingTick()
 	else if(arming_time > ARM_DELAY)
 	{
 		prepareStateChange();
+		FLASH_Clear();
 		state = STATE_ARMED;
 	}
 }

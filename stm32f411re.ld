@@ -81,9 +81,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ENTRY(Reset_Handler)
 
+/* Only use Sectors 0-4 of flash, leaving 128*3 K for data */
 MEMORY 
 {
-    FLASH (rx) : ORIGIN = 0x08000000, LENGTH = 512K
+    FLASH (rx) : ORIGIN = 0x08000000, LENGTH = 128K
     RAM (rwx)  : ORIGIN = 0x20000000, LENGTH = 128K
 }
 

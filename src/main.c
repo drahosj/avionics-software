@@ -12,6 +12,8 @@
 
 /* Application includes */
 #include <tasks.h>
+#include <flash.h>
+#include <usart.h>
 
 /*Address Defines*/
 
@@ -20,6 +22,7 @@
 volatile uint64_t FlightTime = 0;
 
 static volatile uint8_t task_100_flag = 0;
+static volatile uint8_t task_1s_flag = 0;
 
 static void lowLevelHardwareInit()
 {
@@ -54,26 +57,29 @@ int main( void )
 	GPIO_Init(GPIOC, &GPIO_InitStructure);
   
     /* Configure GPIOs for UART */
-    GPIOA->AFR[0] |= (7 << 8);
-    GPIOA->AFR[0] |= (7 << 12);
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2 | GPIO_Pin_3;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
     GPIO_Init(GPIOA, &GPIO_InitStructure);
+	GPIO_PinAFConfig(GPIOA, GPIO_PinSource2, GPIO_AF_USART2);
+	GPIO_PinAFConfig(GPIOA, GPIO_PinSource3, GPIO_AF_USART2);
   
     initialize_usart(USART2);
     NVIC_EnableIRQ(USART2_IRQn);
-    
-    usart_print(USART2, "Hello, world\n", 13);
-    
 
     SysTick_Config(SystemCoreClock/1000);
     initializeTasks();
+	FLASH_Dump();
     for(;;)
     {
 		if (task_100_flag)
 		{
 			Task_100ms();
 			task_100_flag = 0;
+		}
+		if (task_1s_flag)
+		{
+			FLASH_PutData("abcd", 4);
+			task_1s_flag = 0;
 		}
     }
 }
@@ -83,6 +89,8 @@ void SysTick_Handler()
 	FlightTime++;
 	if (FlightTime % 100 == 0)
 		task_100_flag = 1;
+	if (FlightTime % 1000 == 0)
+		task_1s_flag = 1;
 }
 
 void WWDG_IRQHandler()
