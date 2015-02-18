@@ -1,5 +1,6 @@
 #include "usart.h"
 #include "stdio.h"
+#include <stdarg.h>
 #include "stdlib.h"
 
 #define RINGBUFFER_SIZE 1024
@@ -82,6 +83,16 @@ int16_t usart_gets(USART_TypeDef * usart, uint8_t *buffer, uint16_t maxLen)
     }
     
     return len;
+}
+
+int16_t uprintf(const char *fmt, ...)
+{
+    va_list ap;
+	char printf_buffer[64];
+    va_start(ap, fmt);
+    vsnprintf(printf_buffer, 63, fmt, ap);
+	usart_puts(USART2, printf_buffer);
+    va_end(ap);
 }
 
 static status_t usart_get_byte(USART_TypeDef * usart)

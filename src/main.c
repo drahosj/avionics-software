@@ -86,7 +86,7 @@ int main( void )
 	SPI1_Transfer(txBuffer, rxBuffer, 2);
 	GPIO_SetBits(GPIOA, GPIO_Pin_4);
 	
-	while (rxBuffer[1] != 0x55) {}
+	while (rxBuffer[1] != 0x55) 
 	
     for(;;)
     {
