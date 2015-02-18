@@ -14,6 +14,7 @@
 #include <tasks.h>
 #include <flash.h>
 #include <usart.h>
+#include <spi.h>
 
 /*Address Defines*/
 
@@ -65,10 +66,28 @@ int main( void )
   
     initialize_usart(USART2);
     NVIC_EnableIRQ(USART2_IRQn);
+	
+	SPI_Initialize();
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_4;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
+	GPIO_Init(GPIOA, &GPIO_InitStructure);
+	GPIO_SetBits(GPIOA, GPIO_Pin_4);
 
     SysTick_Config(SystemCoreClock/1000);
     initializeTasks();
+	
+	
 	FLASH_Dump();
+	
+	uint8_t txBuffer[2] = {0xD0, 0x00};
+	uint8_t rxBuffer[2];
+	
+	GPIO_ResetBits(GPIOA, GPIO_Pin_4);
+	SPI1_Transfer(txBuffer, rxBuffer, 2);
+	GPIO_SetBits(GPIOA, GPIO_Pin_4);
+	
+	while (rxBuffer[1] != 0x55) {}
+	
     for(;;)
     {
 		if (task_100_flag)
@@ -78,7 +97,6 @@ int main( void )
 		}
 		if (task_1s_flag)
 		{
-			FLASH_PutData("abcd", 4);
 			task_1s_flag = 0;
 		}
     }

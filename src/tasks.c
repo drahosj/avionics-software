@@ -76,9 +76,10 @@ static void doArmingTick()
 	}
 	else if(arming_time > ARM_DELAY)
 	{
+		state = STATE_ARMED;
+		LEDS_Update(state);
 		prepareStateChange();
 		FLASH_Clear();
-		state = STATE_ARMED;
 	}
 }
 

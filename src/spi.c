@@ -30,6 +30,7 @@ static volatile uint8_t SPI1_DMA_RX_Semaphore = 0;
 static void SPI_Initialize1()
 {
     NVIC_InitTypeDef NVIC_InitStructure;
+	GPIO_InitTypeDef GPIO_InitStructure;
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_SPI1, ENABLE);
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2, ENABLE);
 	
@@ -88,6 +89,20 @@ static void SPI_Initialize1()
     
     /* Only use RX interrupt */
     DMA_ITConfig(SPI1_DMA_STREAM_RX, DMA_IT_TC, ENABLE);      
+	
+	/* Configure GPIO */
+	
+  
+  GPIO_PinAFConfig(GPIOA, GPIO_PinSource5, GPIO_AF_SPI1);
+  GPIO_PinAFConfig(GPIOA, GPIO_PinSource6, GPIO_AF_SPI1);
+  GPIO_PinAFConfig(GPIOA, GPIO_PinSource7, GPIO_AF_SPI1);
+  
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+  GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+  GPIO_InitStructure.GPIO_PuPd  = GPIO_PuPd_UP;
+  GPIO_Init(GPIOA, &GPIO_InitStructure);
   
     SPI1_DMA_RX_Semaphore = 0;
 }
