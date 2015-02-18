@@ -20,7 +20,7 @@
 
 /*Init system config*/
 
-volatile uint64_t FlightTime = 0;
+volatile uint32_t FlightTime = 0;
 
 static volatile uint8_t task_100_flag = 0;
 static volatile uint8_t task_1s_flag = 0;
