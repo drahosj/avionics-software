@@ -27,7 +27,7 @@ export IFLAGS+= -I$(CMSIS_ROOT)/Include/
 # Set flags
 export CPPFLAGS+= $(IFLAGS)
 export CFLAGS= --specs=nosys.specs -mthumb -mcpu=cortex-m4 -mfloat-abi=hard
-export CFLAGS+= -mfpu=fpv4-sp-d16 -g -DUSE_STDPERIPH_DRIVER -D$(MCU_MODEL)
+export CFLAGS+= -mfpu=fpv4-sp-d16 -g -DUSE_STDPERIPH_DRIVER -D$(MCU_MODEL) -lm
 export ASFLAGS= -mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16 -g
 
 all:

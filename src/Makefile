@@ -13,7 +13,7 @@ all: image.elf
   
 image.elf: $(OBJECTS)
 	cd STPeriph && make
-	$(CC) $(CFLAGS) $(CPPFLAGS) -T ../stm32f411re.ld -o image.elf *.o STPeriph/*.o
+	$(CC) $(CFLAGS) $(CPPFLAGS) -T ../stm32f411re.ld -o image.elf *.o STPeriph/*.o 
 
 clean:
 	rm -f *.o

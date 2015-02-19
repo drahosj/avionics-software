@@ -53,12 +53,12 @@
       BMP183_REGISTER_READPRESSURECMD    = 0x34
     };
 
-#define ASSERT_CS() GPIO_ResetBits(GPIOA, GPIO_Pin_4);
-#define DEASSERT_CS() GPIO_SetBits(GPIOA, GPIO_Pin_4);
+#define ASSERT_CS() GPIO_ResetBits(GPIOA, GPIO_Pin_4); wait(1)
+#define DEASSERT_CS() GPIO_SetBits(GPIOA, GPIO_Pin_4); wait(1)
 
 #define ARM_DELAY 25
 
-extern volatile uint64_t FlightTime;
+extern volatile uint32_t FlightTime;
 
 static uint16_t arming_time = 0;
 
@@ -70,10 +70,11 @@ static void doArmedTick();
 static void doTestFireTick();
 
 static void doBarometer();
-static float calculateAltitude(uint32_t T, uint32_t P);
 static uint16_t read16(uint8_t address);
+static void wait(uint16_t msec);
 
-static uint16_t ac1, ac2, ac3, ac4, ac5, ac6, b1, b2, mb, mc, md; /* Calibration constants */
+static int16_t ac1, ac2, ac3, b1, b2, mb, mc, md; /* Calibration constants */
+static uint16_t ac4, ac5, ac6;
 
 static void prepareStateChange();
 
@@ -81,6 +82,8 @@ void initializeTasks()
 {
 	LEDS_Reset();
 	arming_time = 0;
+	
+	uint8_t printfBuffer[128];
 	
 	
 	ac1 = read16(BMP183_REGISTER_CAL_AC1);
@@ -96,6 +99,8 @@ void initializeTasks()
 	mb = read16(BMP183_REGISTER_CAL_MB);
 	mc = read16(BMP183_REGISTER_CAL_MC);
 	md = read16(BMP183_REGISTER_CAL_MD);
+	sprintf(printfBuffer, "AC1:%d\r\nAC2:%d\r\nAC3:%d\r\nAC4:%d\r\nAC5:%d\r\nAC6:%d\r\nB1:%d\r\nB2:%d\r\nMB:%d\r\nMC:%d\r\nMD:%d\r\n", ac1, ac2, ac3, ac4, ac5, ac6, b1, b2, mb, mc, md);
+	/* usart_puts(USART2, printfBuffer); */
 }
 
 void Task_100ms()
@@ -202,38 +207,28 @@ static void doBarometer()
 	uint8_t txBuffer[10];
 	uint8_t rxBuffer[10];
 	uint8_t sprintfBuffer[32];
-	uint32_t startTime = 0;
-	int32_t UT, UP, B3, B4, B5, B6, B7, X1, X2, X3, T, P;
+	int32_t UT, UP, B3, B4, B5, B6, B7, X1, X2, X3, T, P, A;
 	uint8_t oss = 0;
-	
-	/* Read barometer and write to flash */
+
 	/* Initiate temperature read */
 	txBuffer[0] = 0x74;
 	txBuffer[1] = 0x2E;
-	ASSERT_CS()
+	ASSERT_CS();
 	SPI1_Transfer(txBuffer, rxBuffer, 2);
 	DEASSERT_CS();
-	startTime = FlightTime;
-	while (FlightTime < startTime + 5) {} /* DELAY FOR READ - TRY TO PROPERLY ASYNC THIS! */
-	
-	/* Read UT */
+	wait(4);
 	UT = read16(0xF6);
-	
-	sprintf(sprintfBuffer, "UT:%d ", UT);
-	usart_puts(USART2, sprintfBuffer);
-	
+		
 	/* Initiate pressure read */	
 	txBuffer[0] = 0x74;
 	txBuffer[1] = 0x34;
-	ASSERT_CS()
+	ASSERT_CS();
 	SPI1_Transfer(txBuffer, rxBuffer, 2);
 	DEASSERT_CS();
-	startTime = FlightTime;
-	while (FlightTime < startTime + 5) {} /* DELAY FOR READ - TRY TO PROPERLY ASYNC THIS! */
-	
-	/* Read UP */
+	wait(4);
 	UP = read16(0xF6);
-	
+
+	/* Debug values from the datasheet
   UT = 27898;
   UP = 23843;
   ac6 = 23153;
@@ -245,57 +240,76 @@ static void doBarometer()
   ac3 = -14383;
   ac2 = -72;
   ac1 = 408;
-  ac4 = 32741;
-	
-	sprintf(sprintfBuffer, "UP:%d ", UP);
-	usart_puts(USART2, sprintfBuffer);
+  ac4 = 32741;*/
+  
+
 	
 	  // do temperature calculations
-  X1=(UT-ac6)*(ac5)/pow(2,15);
-  X2=(mc*pow(2,11))/(X1+md);
+  X1=(UT-ac6)*(ac5)/(2<<14);
+  X2=(mc*(2<<10))/(X1+md);
   B5=X1 + X2;
-  T = (B5+8)/pow(2,4);
-/*
+  T = (B5+8)/(2<<3);
+
   // do pressure calcs
   B6 = B5 - 4000;
-  X1 = ((int32_t)b2 * ( (B6 * B6)>>12 )) >> 11;
-  X2 = ((int32_t)ac2 * B6) >> 11;
+  X1 = (b2 * (B6 * (B6/(2<<11))))/(2<<10);
+  X2 = (ac2 * B6) >> 11;
   X3 = X1 + X2;
-  B3 = ((((int32_t)ac1*4 + X3) << oversampling) + 2) / 4;
+  B3 = (((ac1*4 + X3) << oss) + 2) / 4;
 
-  X1 = ((int32_t)ac3 * B6) >> 13;
-  X2 = ((int32_t)b1 * ((B6 * B6) >> 12)) >> 16;
+  X1 = (ac3 * B6)/(2<<12);
+  X2 = (b1 * (B6 * B6/(2<<11)))/((int32_t)(2<<15));
   X3 = ((X1 + X2) + 2) >> 2;
-  B4 = ((uint32_t)ac4 * (uint32_t)(X3 + 32768)) >> 15;
-  B7 = ((uint32_t)UP - B3) * (uint32_t)( 50000UL >> oversampling );
-
-  if (B7 < 0x80000000) {
-    p = (B7 * 2) / B4;
-  } else {
-    p = (B7 / B4) * 2;
-  }
-  X1 = (p >> 8) * (p >> 8);
-  X1 = (X1 * 3038) >> 16;
-  X2 = (-7357 * p) >> 16;
-
-  p = p + ((X1 + X2 + (int32_t)3791)>>4);*/
+  B4 = (ac4 * (uint32_t)(X3 + 32768))/(2<<14);
+  B7 = ((uint32_t)UP - B3) * (uint32_t)( 50000 >> oss );
   
-sprintf(sprintfBuffer, "T:%d P:%d\r\n", T, P);
-usart_puts(USART1, sprintfBuffer);
+  P = (B7 / B4) * 2;
+  
+  X1 = (P/(2<<7)) * (P/(2<<7));
+  X1 = (X1 * 3038)/(2<<15);
+  X2 = (-7357 * P)/(2<<15);
+
+  P = P + ((X1 + X2 + 3791)/(2<<3));
+ /* A = 44330*(1-pow((P/1013.24f),(1/5.255f))); */ /* Floating point is HARD!*/
+  
+/*sprintf(sprintfBuffer, "UT:%d UP:%d T:%d P:%d\r\n", UT, UP, T, P);
+usart_puts(USART1, sprintfBuffer);*/
+	uint8_t flashBuffer[12]; 
+	flashBuffer[0] = ((FlightTime & 0xFF000000) >> 24) & 0xFF;
+	flashBuffer[1] = ((FlightTime & 0x00FF0000) >> 16) & 0xFF;
+	flashBuffer[2] = ((FlightTime & 0x0000FF00) >> 8) & 0xFF;
+	flashBuffer[3] = (FlightTime & 0x000000FF) & 0xFF;
+	flashBuffer[6] = ((T & 0xFF00) >> 8) & 0xFF;
+	flashBuffer[7] = (T & 0x00FF) & 0xFF;
+	flashBuffer[8] = ((P & 0xFF000000) >> 24) & 0xFF;
+	flashBuffer[9] = ((P & 0x00FF0000) >> 16) & 0xFF;
+	flashBuffer[10] = ((P & 0x0000FF00) >> 8) & 0xFF;
+	flashBuffer[11] = (P & 0x000000FF) & 0xFF;
+	flashBuffer[4] = 0x00;
+	flashBuffer[5] = 0x00;
+	FLASH_PutData(flashBuffer, 12);
 }
 
-uint16_t read16(uint8_t address)
+static void wait(uint16_t msec)
 {
-	uint8_t txBuffer[3];
-	uint8_t rxBuffer[3];
+	uint32_t startTime = FlightTime;
+	while (FlightTime < startTime + msec) {}
+}
+
+static uint16_t read16(uint8_t address)
+{
+	uint8_t txBuffer[3] = {0, 0, 0};
+	uint8_t rxBuffer[3] = {0, 0, 0};
+	char sprintfBuffer[42];
 	uint16_t ret;
 	
 	txBuffer[0] = address;
-	ASSERT_CS()
+	ASSERT_CS();
 	SPI1_Transfer(txBuffer, rxBuffer, 3);
 	DEASSERT_CS();
 	ret = rxBuffer[2]; /* LSB */
 	ret |= (rxBuffer[1] << 8); /* MSB */
+	
 	
 	return ret;	
 }
