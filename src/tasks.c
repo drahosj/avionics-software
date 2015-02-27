@@ -41,6 +41,8 @@ static uint8_t state = STATE_UNARMED;
 static void doUnarmedTick();
 static void doArmingTick();
 static void doArmedTick();
+static void doCoastTick();
+static void doPowerTick();
 static void doTestFireTick();
 
 static void prepareStateChange();
@@ -77,6 +79,12 @@ void Task_100ms()
 	case STATE_ARMED:
 		doArmedTick();
 		break;
+    case STATE_POWER:
+        doPowerTick();
+        break;
+    case STATE_COAST:
+        doCoastTick();
+        break;
 	case STATE_TEST_FIRE:
 		doTestFireTick();
 		break;
@@ -152,10 +160,40 @@ static void doArmedTick()
 	if (arming_time > ARM_DELAY)
 	{
 		prepareStateChange();
+        FLASH_PutPacket(EVENT_LAUNCH, LAUNCH_SOURCE_MANUAL, tmp);
         BAROMETER_BufferToFlash();
         BAROMETER_ClearBuffer();
 		state = STATE_TEST_FIRE;
 	}
+} 
+
+static void doPowerTick()
+{
+    uint16_t tmp;
+    
+    BAROMETER_ReadToFlash();
+    
+    arming_time++;
+    
+    if (arming_time > 30) /* Three seconds of power */
+    {
+        FLASH_PutPacket(EVENT_BURNOUT, FlightTime, 0);
+        prepareStateChange();
+        state = STATE_COAST;
+    }
+} 
+
+static void doCoastTick()
+{
+    uint16_t tmp;
+    
+    BAROMETER_ReadToFlash();
+    
+    if (0) /* Detect apogee */
+    {
+        prepareStateChange();
+        state = STATE_COAST;
+    }
 }
 
 static void doTestFireTick()

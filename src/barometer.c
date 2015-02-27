@@ -151,7 +151,8 @@ void BAROMETER_ReadToFlash()
 }
 
 #define PRESSURE_THRESHOLD 50
-#define TEMPERATURE_THRESHOLD 10
+#define TEMPERATURE_THRESHOLD 2
+#define SAMPLE_SIZE 20
 uint8_t BAROMETER_CheckLaunch()
 {
     uint32_t baseAverageT = 0;
@@ -164,38 +165,39 @@ uint8_t BAROMETER_CheckLaunch()
     if (history_full == 0)
         return 0;
    
-    for (i = 0; i < 20; i++)
+    for (i = 0; i < SAMPLE_SIZE; i++)
     {
         currentAverageT += cursor->t;
         currentAverageP += cursor->p;
         
         cursor--;
-        if (cursor == history_buffer)
-            cursor = history_buffer + HISTORY_SIZE;
+        if (cursor <= history_buffer)
+            cursor = &history_buffer[HISTORY_SIZE -1];
     }
-    currentAverageT = currentAverageT / 20;
-    currentAverageP = currentAverageP / 20;
+    currentAverageT = currentAverageT / SAMPLE_SIZE;
+    currentAverageP = currentAverageP / SAMPLE_SIZE;
     
-     for (i = 0; i < 20; i++)
+     for (i = 0; i < SAMPLE_SIZE; i++)
     {
         baseAverageT += cursor->t;
         baseAverageP += cursor->p;
         
         cursor--;
-        if (cursor == history_buffer)
-            cursor = history_buffer + HISTORY_SIZE;
+        if (cursor <= history_buffer)
+            cursor = &history_buffer[HISTORY_SIZE -1];
     }
-    baseAverageT = baseAverageT / 20;
-    baseAverageP = baseAverageP / 20;
+    baseAverageT = baseAverageT / SAMPLE_SIZE;
+    baseAverageP = baseAverageP / SAMPLE_SIZE;
         
     if ((currentAverageT > baseAverageT + TEMPERATURE_THRESHOLD)||( currentAverageT < baseAverageT - TEMPERATURE_THRESHOLD))
         return LAUNCH_SOURCE_TEMPERATURE;
     if ((currentAverageP > baseAverageP + PRESSURE_THRESHOLD)||( currentAverageP < baseAverageP - PRESSURE_THRESHOLD))
         return LAUNCH_SOURCE_PRESSURE;
+    return 0;
 }
 
 
-static void barometer_read(uint32_t *p, uint32_t *t)
+static void barometer_read(uint32_t *t, uint32_t *p)
 {
     uint8_t txBuffer[10];
     uint8_t rxBuffer[10];
