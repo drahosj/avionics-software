@@ -42,22 +42,42 @@ void FLASH_Clear()
 void FLASH_Dump()
 {
 	uint8_t * ptr = (uint8_t *) FLASH_ADDRESS_BASE;
-	uint32_t value = 0;
+    uint8_t type;
+    uint32_t timestamp;
+    uint32_t data;
 	char printfBuffer[42];
 	
 	/* Currently print everything until a 0xFFFFFFFF */
-	while (value != 0xFFFFFFFF)
+    usart_puts(USART2, "\n========\n"); /* Magic token */
+	for(;;)
 	{
-		value = 0;
-		value |= *(ptr++) << 24;
-		value |= *(ptr++) << 16;
-		value |= *(ptr++) << 8;
-		value |= *(ptr++);
-		sprintf(printfBuffer, "%d\r\n", value);
-		usart_puts(USART2, printfBuffer);
-		wait(10);
+        type = *(ptr++);
+        if (type == 0xff)
+            break;
+            
+		timestamp = 0;
+		timestamp |= *(ptr++) << 16;
+		timestamp |= *(ptr++) << 8;
+		timestamp |= *(ptr++);
+        
+        data = 0;
+        data |= *(ptr++) << 24;
+        data |= *(ptr++) << 16;
+        data |= *(ptr++) << 8;
+        data |= *(ptr++);
+        
+        sprintf(printfBuffer, "=%d:0x%x:%d\n", timestamp, type, data);
+        usart_puts(USART2, printfBuffer);
+        
+        /* Wait for TX Buffer to empty so we don't overflow it by flooding
+         * it with data */
+        wait(4);
 	}
 }
+
+/* Data packet format: 8 bytes
+ * 8 bits type identifier, 3 bytes 24-bit timestamp (msec), 32 bit data
+ * */
 
 void FLASH_PutData(uint8_t * data, uint16_t length)
 {
@@ -72,4 +92,20 @@ void FLASH_PutData(uint8_t * data, uint16_t length)
 		while (status != FLASH_COMPLETE) {};
 	}
 	FLASH_Lock();
+}
+
+void FLASH_PutPacket(uint8_t type, uint32_t data)
+{ 
+    uint8_t flashBuffer[8]; 
+    flashBuffer[0] = type;
+    flashBuffer[1] = (FlightTime >> 16) & 0xFF;
+    flashBuffer[2] = (FlightTime >> 8) & 0xFF;
+    flashBuffer[3] = FlightTime & 0xFF;
+    
+    flashBuffer[4] = (data >> 24) & 0xFF;
+    flashBuffer[5] = (data >> 16) & 0xFF;
+    flashBuffer[6] = (data >> 8) & 0xFF;
+    flashBuffer[7] = data & 0xFF;
+    FLASH_PutData(flashBuffer, 8);
+    
 }

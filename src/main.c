@@ -76,7 +76,7 @@ int main( void )
     SysTick_Config(SystemCoreClock/1000);
     initializeTasks();
 	
-	
+	usart_puts(USART2, "Initialized. Dumping flash...\r\n");
 	FLASH_Dump();
 	
 	uint8_t txBuffer[2] = {0xD0, 0x00};

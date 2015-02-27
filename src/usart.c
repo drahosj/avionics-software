@@ -24,7 +24,7 @@ status_t initialize_usart(USART_TypeDef *usart)
     /* Mantissa = 0d104, Frac = 3/16 */
     
     usart->BRR = 0;
-    usart->BRR |= (104 << 4);
+    usart->BRR |= (17 << 4);
     usart->BRR |= 3;
     
     bitSet(usart->CR1, USART_CR1_RE); /* RX Enable */
@@ -141,4 +141,12 @@ void USART2_IRQHandler()
     usart_send_byte(USART2);
     usart_get_byte(USART2);
     NVIC_ClearPendingIRQ(USART2_IRQn);
+}
+
+uint8_t usart_txbuffer_empty(USART_TypeDef * usart)
+{
+    if (txHead == txTail)
+        return 1;
+    else
+        return 0;
 }

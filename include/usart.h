@@ -17,6 +17,8 @@ status_t usart_getc(USART_TypeDef *, uint8_t *);
 int16_t usart_gets(USART_TypeDef * usart, uint8_t *buffer, uint16_t maxlen);
 int16_t usart_print(USART_TypeDef * usart, uint8_t *str, uint16_t len);
 
+uint8_t usart_txbuffer_empty(USART_TypeDef *);
+
 int16_t uprintf(const char *fmt, ...);
 
 
