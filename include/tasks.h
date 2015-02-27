@@ -2,6 +2,7 @@
 
 void Task_100ms();
 void Task_1s();
+void Task_10s();
 void initializeTasks();
 
 typedef enum 

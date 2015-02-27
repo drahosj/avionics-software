@@ -54,6 +54,10 @@ void initializeTasks()
 
 void Task_1s()
 {
+}
+
+void Task_10s()
+{
     if (state == STATE_ARMED)
     {
         BAROMETER_ReadToFlash();
@@ -80,7 +84,7 @@ void Task_100ms()
 	LEDS_Update(state);
 }
 
-void prepareStateChange()
+static void prepareStateChange()
 {
 	LEDS_Reset();
 	arming_time = 0;
@@ -133,7 +137,18 @@ static void doArmedTick()
 	{
 		arming_time = 0;
 	}
-		
+	
+	tmp = BAROMETER_CheckLaunch();
+    if (tmp)
+    {
+        prepareStateChange();
+        FLASH_PutPacket(EVENT_LAUNCH, FlightTime, tmp);
+        BAROMETER_BufferToFlash();
+        BAROMETER_ClearBuffer();
+        
+        state = STATE_POWER;
+    }
+	
 	if (arming_time > ARM_DELAY)
 	{
 		prepareStateChange();

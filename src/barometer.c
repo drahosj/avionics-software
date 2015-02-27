@@ -150,6 +150,51 @@ void BAROMETER_ReadToFlash()
     FLASH_PutPacket(BAROMETER_PRESSURE, FlightTime, P);
 }
 
+#define PRESSURE_THRESHOLD 50
+#define TEMPERATURE_THRESHOLD 10
+uint8_t BAROMETER_CheckLaunch()
+{
+    uint32_t baseAverageT = 0;
+    uint32_t baseAverageP = 0;
+    uint32_t currentAverageT = 0;
+    uint32_t currentAverageP = 0;
+    uint8_t i;
+    history_t * cursor = history_current;
+    
+    if (history_full == 0)
+        return 0;
+   
+    for (i = 0; i < 20; i++)
+    {
+        currentAverageT += cursor->t;
+        currentAverageP += cursor->p;
+        
+        cursor--;
+        if (cursor == history_buffer)
+            cursor = history_buffer + HISTORY_SIZE;
+    }
+    currentAverageT = currentAverageT / 20;
+    currentAverageP = currentAverageP / 20;
+    
+     for (i = 0; i < 20; i++)
+    {
+        baseAverageT += cursor->t;
+        baseAverageP += cursor->p;
+        
+        cursor--;
+        if (cursor == history_buffer)
+            cursor = history_buffer + HISTORY_SIZE;
+    }
+    baseAverageT = baseAverageT / 20;
+    baseAverageP = baseAverageP / 20;
+        
+    if ((currentAverageT > baseAverageT + TEMPERATURE_THRESHOLD)||( currentAverageT < baseAverageT - TEMPERATURE_THRESHOLD))
+        return LAUNCH_SOURCE_TEMPERATURE;
+    if ((currentAverageP > baseAverageP + PRESSURE_THRESHOLD)||( currentAverageP < baseAverageP - PRESSURE_THRESHOLD))
+        return LAUNCH_SOURCE_PRESSURE;
+}
+
+
 static void barometer_read(uint32_t *p, uint32_t *t)
 {
     uint8_t txBuffer[10];

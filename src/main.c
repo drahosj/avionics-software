@@ -24,6 +24,7 @@ volatile uint32_t FlightTime = 0;
 
 static volatile uint8_t task_100_flag = 0;
 static volatile uint8_t task_1s_flag = 0;
+static volatile uint8_t task_10s_flag = 0;
 
 static void lowLevelHardwareInit()
 {
@@ -95,10 +96,15 @@ int main( void )
 			Task_100ms();
 			task_100_flag = 0;
 		}
-		if (task_1s_flag)
-		{
+        if (task_1s_flag)
+        {
             Task_1s();
-			task_1s_flag = 0;
+            task_1s_flag = 0;
+        }
+		if (task_10s_flag)
+		{
+            Task_10s();
+			task_10s_flag = 0;
 		}
     }
 }
@@ -110,6 +116,8 @@ void SysTick_Handler()
 		task_100_flag = 1;
 	if (FlightTime % 1000 == 0)
 		task_1s_flag = 1;
+    if (FlightTime % 10000 == 0)
+        task_10s_flag = 1;
 }
 
 void WWDG_IRQHandler()

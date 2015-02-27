@@ -9,5 +9,6 @@ void BAROMETER_ReadToBuffer();
 void BAROMETER_BufferToFlash();
 void BAROMETER_ClearBuffer();
 void BAROMETER_Initialize();
+uint8_t BAROMETER_CheckLaunch();
 
 #endif
