@@ -9,9 +9,12 @@
  * Clock task should be started early in init
  *
  */
-
+#include <stdint.h>
 void startClock();
 long getFlightTime();
+
+extern uint32_t FlightTime;
+void wait(uint16_t msec);
 
 
 #endif

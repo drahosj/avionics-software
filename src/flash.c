@@ -94,13 +94,13 @@ void FLASH_PutData(uint8_t * data, uint16_t length)
 	FLASH_Lock();
 }
 
-void FLASH_PutPacket(uint8_t type, uint32_t data)
+void FLASH_PutPacket(uint8_t type, uint32_t timestamp, uint32_t data)
 { 
     uint8_t flashBuffer[8]; 
     flashBuffer[0] = type;
-    flashBuffer[1] = (FlightTime >> 16) & 0xFF;
-    flashBuffer[2] = (FlightTime >> 8) & 0xFF;
-    flashBuffer[3] = FlightTime & 0xFF;
+    flashBuffer[1] = (timestamp >> 16) & 0xFF;
+    flashBuffer[2] = (timestamp >> 8) & 0xFF;
+    flashBuffer[3] = timestamp & 0xFF;
     
     flashBuffer[4] = (data >> 24) & 0xFF;
     flashBuffer[5] = (data >> 16) & 0xFF;

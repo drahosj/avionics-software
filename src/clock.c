@@ -38,6 +38,13 @@ time_t getFlightTime() {
     return mktime(&currentTime);
 }
 
+void wait(uint16_t msec)
+{
+    uint32_t startTime = FlightTime;
+    while (FlightTime < startTime + msec) {}
+}
+
+
 void startClock() {
     uint32_t tmp = 0;
     RCC_TypeDef * rcc = RCC;

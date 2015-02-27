@@ -97,6 +97,7 @@ int main( void )
 		}
 		if (task_1s_flag)
 		{
+            Task_1s();
 			task_1s_flag = 0;
 		}
     }

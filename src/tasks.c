@@ -43,8 +43,6 @@ static void doArmingTick();
 static void doArmedTick();
 static void doTestFireTick();
 
-static void wait(uint16_t msec);
-
 static void prepareStateChange();
 
 void initializeTasks()
@@ -52,6 +50,14 @@ void initializeTasks()
 	LEDS_Reset();
 	arming_time = 0;
     BAROMETER_Initialize();
+}
+
+void Task_1s()
+{
+    if (state == STATE_ARMED)
+    {
+        BAROMETER_ReadToFlash();
+    }
 }
 
 void Task_100ms()
@@ -116,7 +122,7 @@ static void doArmedTick()
 {
 	uint16_t tmp;
 	
-	BAROMETER_ReadToFlash();
+	BAROMETER_ReadToBuffer();
 	
 	tmp = GPIOC->IDR & 0x0010;
 	if (tmp == 0)
@@ -131,6 +137,8 @@ static void doArmedTick()
 	if (arming_time > ARM_DELAY)
 	{
 		prepareStateChange();
+        BAROMETER_BufferToFlash();
+        BAROMETER_ClearBuffer();
 		state = STATE_TEST_FIRE;
 	}
 }
@@ -141,6 +149,8 @@ static void doTestFireTick()
 	arming_time++;
 	tmp |= 0x03c0;
 	GPIOC->ODR = tmp;
+    
+    BAROMETER_ReadToFlash();
 	
 	if (arming_time > 25)
 	{
@@ -151,10 +161,4 @@ static void doTestFireTick()
 		prepareStateChange();
 		state = STATE_UNARMED;
 	}
-}
-
-static void wait(uint16_t msec)
-{
-	uint32_t startTime = FlightTime;
-	while (FlightTime < startTime + msec) {}
 }

@@ -5,6 +5,7 @@
 #include <tasks.h>
 #include <stdio.h>
 #include <stm32f4xx.h>
+#include <clock.h>
 #include <stdint.h>
 #include <stm32f4xx_usart.h>
 
@@ -38,6 +39,19 @@
 static int16_t ac1, ac2, ac3, b1, b2, mb, mc, md; /* Calibration constants */
 static uint16_t ac4, ac5, ac6;
 
+#define HISTORY_SIZE 100
+typedef struct
+{
+    uint32_t t;
+    uint32_t p;
+    uint32_t timestamp;
+} history_t;
+
+static uint8_t history_full = 0;
+static history_t * history_current = 0;
+static history_t history_buffer[HISTORY_SIZE];
+
+
 static void barometer_read(uint32_t *, uint32_t *);
 
 static uint16_t read16(uint8_t address)
@@ -62,6 +76,8 @@ void BAROMETER_Initialize()
 {
     uint8_t printfBuffer[128];
     
+    history_full = 0;
+    history_current = history_buffer;
     
     ac1 = read16(BMP183_REGISTER_CAL_AC1);
     ac2 = read16(BMP183_REGISTER_CAL_AC2);
@@ -76,31 +92,62 @@ void BAROMETER_Initialize()
     mb = read16(BMP183_REGISTER_CAL_MB);
     mc = read16(BMP183_REGISTER_CAL_MC);
     md = read16(BMP183_REGISTER_CAL_MD);
+    
     sprintf(printfBuffer, "AC1:%d\r\nAC2:%d\r\nAC3:%d\r\nAC4:%d\r\nAC5:%d\r\nAC6:%d\r\nB1:%d\r\nB2:%d\r\nMB:%d\r\nMC:%d\r\nMD:%d\r\n", ac1, ac2, ac3, ac4, ac5, ac6, b1, b2, mb, mc, md);
     usart_puts(USART2, printfBuffer);
 }
 
 void BAROMETER_ClearBuffer()
 {
-    
+    history_full = 0;
+    history_current = history_buffer;
 }
 
 void BAROMETER_ReadToBuffer()
 {
+    uint32_t T, P;
+    barometer_read(&T, &P);
     
+    history_current->t = T;
+    history_current->p = P;
+    history_current->timestamp = FlightTime;
+    
+    history_current++;
+    
+    if (history_current == history_buffer + HISTORY_SIZE)
+    {
+        history_full = 1;
+        history_current = history_buffer;
+    }
 }
 
 void BAROMETER_BufferToFlash()
 {
-    
+    int8_t i;
+    if (history_full)
+    {
+        for(i = 0; i < HISTORY_SIZE; i++)
+        {
+            FLASH_PutPacket(BAROMETER_TEMPERATURE, history_buffer[i].timestamp, history_buffer[i].t);
+            FLASH_PutPacket(BAROMETER_PRESSURE, history_buffer[i].timestamp, history_buffer[i].p);
+        }   
+    }
+    else
+    {
+        for(i = 0; i < (history_current - history_buffer); i++)
+        {
+            FLASH_PutPacket(BAROMETER_TEMPERATURE, history_buffer[i].timestamp, history_buffer[i].t);
+            FLASH_PutPacket(BAROMETER_PRESSURE, history_buffer[i].timestamp, history_buffer[i].p);
+        }
+    }
 }
 
 void BAROMETER_ReadToFlash()
 {
     uint32_t T, P;
     barometer_read(&T, &P);
-    FLASH_PutPacket(BAROMETER_TEMPERATURE, T);
-    FLASH_PutPacket(BAROMETER_PRESSURE, P);
+    FLASH_PutPacket(BAROMETER_TEMPERATURE, FlightTime, T);
+    FLASH_PutPacket(BAROMETER_PRESSURE, FlightTime, P);
 }
 
 static void barometer_read(uint32_t *p, uint32_t *t)

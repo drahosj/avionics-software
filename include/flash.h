@@ -7,7 +7,7 @@
 void FLASH_Clear();
 void FLASH_Initialize();
 void FLASH_PutData(uint8_t * data, uint16_t length);
-void FLASH_PutPacket(uint8_t type, uint32_t data);
+void FLASH_PutPacket(uint8_t type, uint32_t time, uint32_t data);
 void FLASH_Dump();
 
 #define BAROMETER_PRESSURE 0x10
