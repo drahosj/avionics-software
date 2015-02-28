@@ -79,6 +79,11 @@ int main( void )
 	
 	usart_puts(USART2, "Initialized. Dumping flash...\r\n");
 	FLASH_Dump();
+    
+    /* Set baud rate to 9600 */
+    USART2->BRR = 0;
+    USART2->BRR |= (104 << 4);
+    USART2->BRR |= 3;
 	
 	uint8_t txBuffer[2] = {0xD0, 0x00};
 	uint8_t rxBuffer[2];
