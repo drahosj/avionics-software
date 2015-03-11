@@ -33,6 +33,7 @@
 #define ARM_DELAY 25
 
 extern volatile uint32_t FlightTime;
+uint32_t LaunchTime;
 
 static uint16_t arming_time = 0;
 
@@ -154,6 +155,8 @@ static void doArmedTick()
         BAROMETER_BufferToFlash();
         BAROMETER_ClearBuffer();
         
+        LaunchTime = FlightTime;
+        
         state = STATE_POWER;
     }
 	
@@ -193,6 +196,10 @@ static void doCoastTick()
     {
         prepareStateChange();
         state = STATE_COAST;
+    }
+    if (FlightTime - LaunchTime > 600000)
+    {
+        NVIC_SystemReset();
     }
 }
 
