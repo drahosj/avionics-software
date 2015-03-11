@@ -29,13 +29,12 @@
 #include <usart.h>
 #include <stdio.h>
 #include <math.h>
-#include <string.h>
 
 #define ARM_DELAY 25
 
 extern volatile uint32_t FlightTime;
 
-static uint32_t arming_time = 0;
+static uint16_t arming_time = 0;
 
 static uint8_t state = STATE_UNARMED;
 
@@ -48,8 +47,6 @@ static void doTestFireTick();
 
 static void prepareStateChange();
 
-static uint32_t armed_time = 0;
-
 void initializeTasks()
 {
 	LEDS_Reset();
@@ -59,47 +56,6 @@ void initializeTasks()
 
 void Task_1s()
 {
-    uint8_t cmdbuffer[16];
-    usart_puts(USART2, "DEBUG:");
-    switch (state)
-    {
-    case STATE_UNARMED:
-        usart_puts(USART2, "UNARMED");
-        break;
-    case STATE_ARMING:
-        usart_puts(USART2, "ARMING");
-        break;
-    case STATE_ARMED:
-        usart_puts(USART2, "ARMED");
-        break;
-    case STATE_POWER:
-        usart_puts(USART2, "POWER");
-        break;
-    case STATE_COAST:
-        usart_puts(USART2, "COAST");
-        break;
-    case STATE_TEST_FIRE:
-        usart_puts(USART2, "TESTFIRE");
-        break;
-    }
-    memset(cmdbuffer, 0, 16);
-    usart_gets(USART2, cmdbuffer, 16);
-    if (strncmp(cmdbuffer, "RESET", 16) == 0)
-        NVIC_SystemReset();
-    
-    if (strncmp(cmdbuffer, "ARM", 16) == 0)
-    {
-        armed_time = FlightTime;
-        state = STATE_ARMED;
-        LEDS_Update(state);
-        prepareStateChange();
-        FLASH_Clear();
-    }
-    
-    usart_puts(USART2, "\r");
-    
-    if (FlightTime - armed_time > 600000)
-        NVIC_SystemReset();
 }
 
 void Task_10s()
@@ -190,9 +146,6 @@ static void doArmedTick()
 		arming_time = 0;
 	}
 	
-	/* Debug */
-	BAROMETER_ReadToFlash();
-	
 	tmp = BAROMETER_CheckLaunch();
     if (tmp)
     {
@@ -208,7 +161,7 @@ static void doArmedTick()
 	{
 		prepareStateChange();
         FLASH_PutPacket(EVENT_LAUNCH, LAUNCH_SOURCE_MANUAL, tmp);
-        //Debug BAROMETER_BufferToFlash();
+        BAROMETER_BufferToFlash();
         BAROMETER_ClearBuffer();
 		state = STATE_TEST_FIRE;
 	}

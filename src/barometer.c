@@ -39,10 +39,6 @@
 static int16_t ac1, ac2, ac3, b1, b2, mb, mc, md; /* Calibration constants */
 static uint16_t ac4, ac5, ac6;
 
-#define PRESSURE_THRESHOLD 50
-#define TEMPERATURE_THRESHOLD 2
-#define SAMPLE_SIZE 20
-
 #define HISTORY_SIZE 100
 typedef struct
 {
@@ -57,11 +53,6 @@ static history_t history_buffer[HISTORY_SIZE];
 
 
 static void barometer_read(uint32_t *, uint32_t *);
-
-static void calculateAverages(uint32_t * baseAverageT, uint32_t * baseAverageP, uint32_t * currentAverageT, uint32_t * currentAverageP)
-{
-
-}
 
 static uint16_t read16(uint8_t address)
 {
@@ -159,6 +150,9 @@ void BAROMETER_ReadToFlash()
     FLASH_PutPacket(BAROMETER_PRESSURE, FlightTime, P);
 }
 
+#define PRESSURE_THRESHOLD 50
+#define TEMPERATURE_THRESHOLD 2
+#define SAMPLE_SIZE 20
 uint8_t BAROMETER_CheckLaunch()
 {
     uint32_t baseAverageT = 0;

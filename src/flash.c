@@ -48,7 +48,7 @@ void FLASH_Dump()
 	char printfBuffer[42];
 	
 	/* Currently print everything until a 0xFFFFFFFF */
-    usart_puts(USART2, "\r========\r"); /* Magic token */
+    usart_puts(USART2, "\n========\n"); /* Magic token */
 	for(;;)
 	{
         type = *(ptr++);
@@ -66,7 +66,7 @@ void FLASH_Dump()
         data |= *(ptr++) << 8;
         data |= *(ptr++);
         
-        sprintf(printfBuffer, "=%d:0x%x:%d\r", timestamp, type, data);
+        sprintf(printfBuffer, "=%d:0x%x:%d\n", timestamp, type, data);
         usart_puts(USART2, printfBuffer);
         
         /* Wait for TX Buffer to empty so we don't overflow it by flooding
